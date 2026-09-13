@@ -1,0 +1,39 @@
+esp sẽ gửi lên fb
+trạng thái khoang: locked: true hoặc false ()
+trạng thái online: true: nếu quá timeout thì => offline
+trạng thái từ cảm biến nhận diện thuốc được lấy hoặc chưa lấy
+
+esp đọc
+lịch thuốc
+
+web gửi
+lịch thuốc
+nút mở khóa khoang
+
+web đọc 
+nút mở khóa khoang 
+trạng thái onl để hiện online hoặc offline
+trạng thái từ cảm biến nhận diện thuốc được lấy hoặc chưa lấy
+
+CẦN FIX
+hiển thị lịch uống:
+esp gửi như nào?
+web lấy như nào?
+web hiện như nào
+
+liều tiếp theo:
+thời gian còn lại
+sau khi pass liều đó thì hiện liều giờ tiếp theo
+
+xóa thiết bị:
+web xóa đã được nhưng làm sao để esp biết thiết bị đã được xóa
+
+nút hỗ trợ nhanh:
+
+gửi thông báo về tài mail:
+
+hiện thị phần tram pin, nếu nhỏ hơn 20% thì báo về mail:
+
+
+web: đã thiết kế lại cấu trúc data
+esp: đã build oke đang chờ mạch về để test data mới

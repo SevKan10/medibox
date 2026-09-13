@@ -1,0 +1,38 @@
+ESP ghi lên Firebase
+medibox_states/device_01
+{
+  "locked": true,
+  "online": true,
+  "medicine_taken": true,
+  "last_seen": 1757131200
+}
+
+medicine_taken
+pill_taken
+taken
+====================================
+ESP đọc lịch thuốc
+medibox_configs/device_01
+{
+  "slot": 1,
+  "name": "Vitamin D3",
+  "detail": "Sau ăn sáng",
+  "doses": [
+    {
+      "time": "07:00",
+      "quantity": 1
+    },
+    {
+      "time": "19:00",
+      "quantity": 2
+    }
+  ]
+}
+=================================
+Web gửi lệnh mở khóa
+medibox_commands/device_01
+{
+  "locked": false,
+  "command": "UNLOCK",
+  "updated_at": "2026-09-06T..."
+}
