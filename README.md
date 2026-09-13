@@ -273,36 +273,10 @@ Device Management
 MEDIBOX/
 │
 ├── firmware/
-│   ├── src/
-│   ├── include/
-│   ├── lib/
-│   └── platformio.ini
-│
 ├── web/
-│   ├── frontend/
-│   ├── backend/
-│   ├── assets/
-│   └── README.md
-│
 ├── pcb/
-│   ├── schematic/
-│   ├── pcb/
-│   ├── gerber/
-│   └── libraries/
-│
 ├── cad/
-│   ├── 3d-models/
-│   ├── enclosure/
-│   ├── mechanism/
-│   ├── step/
-│   └── stl/
-│
 ├── docs/
-│   ├── block-diagram/
-│   ├── datasheets/
-│   ├── technical-docs/
-│   └── images/
-│
 └── README.md
 ```
 
@@ -445,10 +419,10 @@ Current development focuses on:
 - [ ] Sensor integration
 - [ ] DFPlayer Mini integration
 - [ ] Lock mechanism
-- [ ] Web Dashboard
-- [ ] Backend API
-- [ ] Database
-- [ ] Device communication
+- [x] Web Dashboard
+- [x] Backend API
+- [x] Database
+- [x] Device communication
 - [ ] Notification system
 - [ ] PCB prototype
 - [ ] Mechanical prototype
