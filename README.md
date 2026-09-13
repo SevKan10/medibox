@@ -84,7 +84,7 @@ This approach is intended to provide a more natural and friendly reminder compar
 
 ### ⚖️ Medication Intake Detection
 
-A **Load Cell + HX711** module can be installed underneath the medication tray.
+A **Load Cell + PAM** module can be installed underneath the medication tray.
 
 The system can monitor changes in weight to determine whether the medication tray has been removed or the medication has been taken.
 
@@ -175,7 +175,7 @@ This allows the device to continue operating according to the medication schedul
    ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
    │  DS3231 RTC │          │   Sensors   │          │   Motors    │
    │             │          │             │          │             │
-   │ Timekeeping │          │ IR / HX711  │          │ Stepper /   │
+   │ Timekeeping │          │ IR / PAM    │          │ Stepper /   │
    └─────────────┘          └─────────────┘          │ Servo       │
                                                      └──────┬──────┘
                                                             │
@@ -196,7 +196,7 @@ The current hardware architecture includes:
 | **Stepper / Servo Motor** | Medication dispensing mechanism |
 | **IR Sensor** | Pill / mechanism detection |
 | **Load Cell** | Medication tray weight detection |
-| **HX711** | Load cell amplifier and ADC |
+| **PAM** | Load cell amplifier and ADC |
 | **DFPlayer Mini** | Audio playback |
 | **Speaker** | Voice reminder |
 | **OLED Display** | Device information and status |
@@ -220,7 +220,7 @@ Potential libraries include:
 
 ```text
 RTClib
-HX711
+PAM
 DFPlayer Mini
 WiFi
 HTTPClient
@@ -519,7 +519,7 @@ Mô-đun **DFPlayer Mini** và loa phát lời nhắc bằng giọng nói, mang 
 
 ### ⚖️ Phát hiện việc uống thuốc
 
-Load Cell kết hợp với HX711 có thể theo dõi thay đổi trọng lượng của khay thuốc. Nếu người dùng chưa uống thuốc sau một khoảng thời gian được cài đặt, hệ thống có thể nhắc lại và gửi thông báo cho người chăm sóc.
+Load Cell kết hợp với PAM có thể theo dõi thay đổi trọng lượng của khay thuốc. Nếu người dùng chưa uống thuốc sau một khoảng thời gian được cài đặt, hệ thống có thể nhắc lại và gửi thông báo cho người chăm sóc.
 
 ### 🔐 Bảo vệ ngăn thuốc
 
@@ -544,7 +544,7 @@ Mô-đun **DS3231 RTC** duy trì thời gian chính xác, giúp thiết bị ti�
 | **Động cơ bước / servo** | Cơ cấu cấp thuốc |
 | **Cảm biến hồng ngoại** | Phát hiện viên thuốc hoặc cơ cấu |
 | **Load Cell** | Đo trọng lượng khay thuốc |
-| **HX711** | Khuếch đại và chuyển đổi tín hiệu Load Cell |
+| **PAM** | Khuếch đại và chuyển đổi tín hiệu Load Cell |
 | **DFPlayer Mini** | Phát âm thanh nhắc nhở |
 | **Loa** | Phát lời nhắc bằng giọng nói |
 | **Màn hình OLED** | Hiển thị thông tin và trạng thái |
