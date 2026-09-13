@@ -5,6 +5,11 @@
 ![Firmware](https://img.shields.io/badge/Firmware-C%2FC%2B%2B-blue)
 ![License](https://img.shields.io/badge/License-GPL--3.0-blue)
 
+<p>
+  <a href="#english">🇬🇧 English</a> ·
+  <a href="#vietnamese">🇻🇳 Tiếng Việt</a>
+</p>
+
 > **Smart medication management and automatic dispensing system for elderly users and patients requiring scheduled medication.**
 
 MEDIBOX is a smart automatic medicine dispensing system that combines **embedded systems, IoT, mechanical design, PCB design, and web-based management**.
@@ -12,6 +17,8 @@ MEDIBOX is a smart automatic medicine dispensing system that combines **embedded
 The system is designed to automatically dispense medication according to a predefined schedule, provide voice reminders, verify whether the medication has been taken, and allow family members or caregivers to remotely configure and monitor the device through a web dashboard.
 
 ---
+
+<a id="english"></a>
 
 # 🇬🇧 English
 
@@ -477,3 +484,137 @@ See the `LICENSE` file for the full license text.
 ---
 
 © 2026 — **MEDIBOX Project**
+
+---
+
+<a id="vietnamese"></a>
+
+# 🇻🇳 Tiếng Việt
+
+## 📖 Tổng quan
+
+**MEDIBOX** là thiết bị cấp thuốc tự động tích hợp IoT, được thiết kế để hỗ trợ người cao tuổi và những bệnh nhân cần uống thuốc theo lịch cố định.
+
+Hệ thống kết hợp bộ điều khiển **ESP32-S3**, đồng hồ thời gian thực, cảm biến, động cơ, phát âm thanh, cơ cấu khóa bảo vệ và bảng điều khiển web.
+
+Mục tiêu chính là giảm các lỗi liên quan đến việc uống thuốc như quên uống, uống sai giờ, dùng sai liều hoặc lấy thuốc ngoài thời gian được thiết lập.
+
+MEDIBOX được phát triển cho mục đích giáo dục và nghiên cứu, tập trung vào các ứng dụng thực tế của **hệ thống nhúng, điện tử, IoT và kỹ thuật viễn thông**.
+
+---
+
+## ✨ Tính năng chính
+
+### 💊 Cấp thuốc tự động
+
+Cơ cấu cấp thuốc điều khiển bằng động cơ sẽ đưa đúng loại thuốc theo lịch đến khay nhận thuốc. Cơ cấu có thể sử dụng đĩa định lượng xoay, động cơ bước, động cơ servo và cảm biến hồng ngoại.
+
+### ⏰ Quản lý lịch uống thuốc
+
+Người dùng có thể cấu hình lịch uống thuốc trên Web Dashboard, bao gồm tên thuốc, liều lượng, thời gian, số viên, ngăn thuốc và cài đặt nhắc nhở.
+
+### 🔊 Nhắc uống thuốc bằng giọng nói
+
+Mô-đun **DFPlayer Mini** và loa phát lời nhắc bằng giọng nói, mang lại trải nghiệm tự nhiên và thân thiện hơn so với chuông báo đơn giản.
+
+### ⚖️ Phát hiện việc uống thuốc
+
+Load Cell kết hợp với HX711 có thể theo dõi thay đổi trọng lượng của khay thuốc. Nếu người dùng chưa uống thuốc sau một khoảng thời gian được cài đặt, hệ thống có thể nhắc lại và gửi thông báo cho người chăm sóc.
+
+### 🔐 Bảo vệ ngăn thuốc
+
+Khu vực chứa thuốc được bảo vệ bằng cơ cấu khóa. Hệ thống có thể khóa hoặc mở khóa để ngăn việc tiếp cận thuốc ngoài lịch cho phép.
+
+### 🌐 Kết nối Web và IoT
+
+Web Dashboard giao tiếp với backend để quản lý người dùng, lịch uống thuốc, cấu hình thiết bị và đồng bộ dữ liệu giữa dashboard với ESP32-S3.
+
+### 🕒 Đồng hồ thời gian thực
+
+Mô-đun **DS3231 RTC** duy trì thời gian chính xác, giúp thiết bị tiếp tục hoạt động theo lịch ngay cả khi kết nối Internet tạm thời bị gián đoạn.
+
+---
+
+## 🔌 Phần cứng
+
+| Linh kiện | Chức năng |
+|---|---|
+| **ESP32-S3** | Bộ điều khiển chính |
+| **DS3231 RTC** | Đồng hồ thời gian thực |
+| **Động cơ bước / servo** | Cơ cấu cấp thuốc |
+| **Cảm biến hồng ngoại** | Phát hiện viên thuốc hoặc cơ cấu |
+| **Load Cell** | Đo trọng lượng khay thuốc |
+| **HX711** | Khuếch đại và chuyển đổi tín hiệu Load Cell |
+| **DFPlayer Mini** | Phát âm thanh nhắc nhở |
+| **Loa** | Phát lời nhắc bằng giọng nói |
+| **Màn hình OLED** | Hiển thị thông tin và trạng thái |
+| **Khóa điện tử** | Bảo vệ ngăn thuốc |
+| **Đèn LED** | Hiển thị trạng thái hệ thống |
+
+---
+
+## 💻 Phần mềm
+
+### Firmware
+
+Firmware được phát triển bằng **C/C++**, **PlatformIO**, nền tảng **ESP32-S3** và Arduino Framework. Firmware chịu trách nhiệm kết nối Wi-Fi, đồng bộ lịch, xử lý RTC, điều khiển động cơ, đọc cảm biến, phát lời nhắc, điều khiển khóa và cập nhật trạng thái thiết bị.
+
+### Web Dashboard
+
+Web Dashboard cho phép người dùng hoặc người chăm sóc xác thực tài khoản, quản lý thuốc, thiết lập lịch, theo dõi trạng thái thiết bị, khóa/mở khóa và điều khiển thiết bị thủ công.
+
+---
+
+## 📂 Cấu trúc repository
+
+```text
+MEDIBOX/
+├── firmware/
+├── web/
+├── pcb/
+├── cad/
+├── docs/
+└── README.md
+```
+
+---
+
+## 🔄 Quy trình hoạt động
+
+1. Người dùng cấu hình thông tin thuốc và lịch uống.
+2. Dữ liệu được lưu ở backend.
+3. ESP32-S3 đồng bộ lịch uống thuốc.
+4. DS3231 kiểm tra thời gian hiện tại.
+5. Cơ cấu cấp thuốc hoạt động đúng thời điểm.
+6. DFPlayer Mini phát lời nhắc bằng giọng nói.
+7. Người dùng uống thuốc.
+8. Load Cell hoặc cảm biến xác nhận hành động.
+9. Hệ thống cập nhật trạng thái và thông báo cho người chăm sóc nếu cần.
+
+---
+
+## 🚧 Trạng thái dự án
+
+**Trạng thái: Đang phát triển**
+
+Đã hoàn thành kiến trúc repository, Web Dashboard, Backend API, cơ sở dữ liệu và giao tiếp với thiết bị. Firmware ESP32-S3, lập lịch RTC, cơ cấu cấp thuốc, tích hợp cảm biến, DFPlayer Mini, khóa, PCB, mô hình cơ khí và tích hợp toàn hệ thống vẫn đang được phát triển.
+
+---
+
+## 🔮 Định hướng phát triển
+
+Các hướng phát triển có thể bao gồm ứng dụng di động, thông báo Zalo/SMS, lịch sử uống thuốc, nhiều tài khoản người chăm sóc, đồng bộ đám mây, cập nhật firmware OTA, chế độ ngoại tuyến, thống kê thuốc, xác minh bằng camera, hỗ trợ AI, pin dự phòng và phát hiện mất điện.
+
+---
+
+## 👥 Dự án
+
+MEDIBOX là dự án giáo dục và nghiên cứu trong các lĩnh vực hệ thống nhúng, điện tử, IoT, viễn thông, tự động hóa, thiết kế cơ khí và phát triển web.
+
+## 📄 Giấy phép
+
+MEDIBOX được phát hành theo **GNU General Public License phiên bản 3.0 (GPL-3.0)**. Bạn có thể sử dụng, nghiên cứu, chỉnh sửa và phân phối dự án theo các điều khoản của giấy phép này.
+
+Xem đầy đủ nội dung tại file `LICENSE`.
+
+© 2026 — **Dự án MEDIBOX**
