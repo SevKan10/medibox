@@ -1,0 +1,25 @@
+# --- Altium Designer ---
+*.PrjPcbStructure
+*.Log
+*.Cam
+*.Out
+*.Civil
+*.GM1
+*.GBL
+*.GTL
+*.GBS
+*.GTS
+*.GBP
+*.GTP
+*.GKO
+*.RUL
+*.DRR
+*.TXT
+*.REP
+*.BAK
+*.BKP
+*.DDB
+*.History
+*.zip
+*_Default.SchDot
+*_Default.PcbDot
