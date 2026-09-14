@@ -1,11 +1,25 @@
-// Ưu tiên nhận dữ liệu từ Realtime Database qua PHP, nếu chưa có thì dùng mặc định
-let medications = (window.serverMedications || [
-  { slot: 1, name: 'Vitamin D3', detail: 'Sau bữa sáng', tone: 'mint', doses: [{ time: '07:00', quantity: 1 }] },
-  { slot: 2, name: 'Omega 3', detail: 'Sau bữa trưa', tone: 'blue', doses: [{ time: '12:00', quantity: 2 }] },
-  { slot: 3, name: 'Metformin', detail: 'Sau bữa tối', tone: 'coral', doses: [{ time: '19:00', quantity: 1 }] },
-  { slot: 4, name: 'Chưa thiết lập', detail: '', tone: 'empty', doses: [] },
-  { slot: 5, name: 'Chưa thiết lập', detail: '', tone: 'empty', doses: [] },
-]).map(normalizeMedication);
+// Luôn giữ đúng bốn ngăn vật lý của thiết bị đang chọn.
+const defaultMedications = [
+  { slot: 1, name: 'Chưa thiết lập', detail: '', tone: 'empty', doses: [] },
+  { slot: 2, name: 'Chưa thiết lập', detail: '', tone: 'empty', doses: [] },
+  { slot: 3, name: 'Chưa thiết lập', detail: '', tone: 'empty', doses: [] },
+  { slot: 4, name: 'Chưa thiết lập', detail: '', tone: 'empty', doses: [] }
+];
+
+function normalizeMedicationList(source) {
+  const bySlot = new Map();
+  (Array.isArray(source) ? source : []).forEach(medication => {
+    const normalized = normalizeMedication(medication);
+    if (Number.isInteger(normalized.slot) && normalized.slot >= 1 && normalized.slot <= 4) {
+      bySlot.set(normalized.slot, normalized);
+    }
+  });
+  return defaultMedications.map(defaultMedication =>
+    bySlot.get(defaultMedication.slot) || normalizeMedication(defaultMedication)
+  );
+}
+
+let medications = normalizeMedicationList(window.serverMedications);
 
 let deviceState = {
   online: false,
@@ -17,7 +31,7 @@ let deviceState = {
 function normalizeMedication(medication) {
   const slot = medication.slot ?? medication.slot_id;
   const name = medication.name ?? medication.medicine_name ?? 'Chưa thiết lập';
-  const detail = medication.detail ?? medication.note ?? '';
+  const detail = medication.detail ?? medication.note ?? ''; 
   if (Array.isArray(medication.doses)) {
     return {
       ...medication,
@@ -227,10 +241,10 @@ function renderMainContent() {
           <div class="mb-4 flex items-center justify-between">
               <div>
                   <h3 class="text-lg font-semibold">Các ngăn thuốc</h3>
-                  <p class="text-sm text-muted-foreground">5 ngăn hệ thống</p>
+                  <p class="text-sm text-muted-foreground">4 ngăn hệ thống</p>
               </div>
           </div>
-          <div id="medications-grid" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"></div>
+          <div id="medications-grid" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"></div>
       </section>
 
       <section class="mt-8 grid gap-4 lg:grid-cols-[1.35fr_1fr]">
@@ -286,11 +300,11 @@ function renderMainContent() {
           <div class="mb-4 flex items-center justify-between">
               <div>
                   <h3 class="text-lg font-semibold">Các ngăn thuốc (Nhấn vào ngăn để sửa)</h3>
-                  <p class="text-sm text-muted-foreground">5 ngăn cấu hình thiết bị</p>
+                  <p class="text-sm text-muted-foreground">4 ngăn cấu hình thiết bị</p>
               </div>
               <button onclick="openEditModal()" class="text-sm font-semibold text-primary hover:underline">Sửa ngăn thuốc →</button>
           </div>
-          <div id="medications-grid-editable" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"></div>
+          <div id="medications-grid-editable" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"></div>
       </section>
 
       <section class="mt-8">
@@ -867,7 +881,7 @@ function loadDeviceMedications() {
     .then(response => response.json())
     .then(data => {
       if (data.status !== 'success' || !Array.isArray(data.medications)) return;
-      medications = data.medications.map(normalizeMedication);
+      medications = normalizeMedicationList(data.medications);
       renderMainContent();
     })
     .catch(error => console.warn('Không đọc được lịch thiết bị:', error));
