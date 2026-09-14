@@ -90,6 +90,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['id_token'] = $result['idToken'];
                     $_SESSION['local_id'] = $result['localId'];
 
+                    initializeUserData(
+                        $result['localId'],
+                        $_SESSION['user_name'],
+                        $result['idToken']
+                    );
+
                     // Chuyển hướng sang trang quản lý chính
                     header("Location: index.php");
                     exit();
@@ -112,6 +118,44 @@ function callFirebaseApi($url, $data) {
     $response = curl_exec($ch);
     curl_close($ch);
     return $response;
+}
+
+function initializeUserData($localId, $displayName, $idToken) {
+    $profilePath = 'users/' . rawurlencode($localId) . '/profile';
+    $profileUrl = FIREBASE_DB_URL . trim($profilePath, '/') . '.json?auth=' . urlencode($idToken);
+    $profileResponse = callFirebaseDatabase($profileUrl, 'GET');
+    $profile = json_decode($profileResponse, true);
+
+    $profileData = [
+        'display_name' => $displayName,
+        'timezone' => 'Asia/Ho_Chi_Minh'
+    ];
+    if (!is_array($profile) || !isset($profile['created_at'])) {
+        $profileData['created_at'] = time();
+    }
+
+    $userData = [
+        'profile' => $profileData,
+        'user_settings' => [
+            'low_battery_threshold_percent' => 20,
+            'offline_timeout_seconds' => 120
+        ]
+    ];
+    $userUrl = FIREBASE_DB_URL . 'users/' . rawurlencode($localId) . '.json?auth=' . urlencode($idToken);
+    callFirebaseDatabase($userUrl, 'PATCH', $userData);
+}
+
+function callFirebaseDatabase($url, $method, $payload = null) {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    if ($payload !== null) {
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE));
+    }
+    $response = curl_exec($ch);
+    curl_close($ch);
+    return $response === false ? '' : $response;
 }
 ?>
 <!DOCTYPE html>
