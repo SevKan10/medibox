@@ -33,15 +33,8 @@ users/{uid}/
     offline_timeout_seconds
 ```
 
-`devices` là tên chuẩn mới. Trong code hiện tại, ba nhánh cũ tương đương là:
-
-```text
-medibox_configs/{device_id}  -> devices/{device_id}/config
-medibox_states/{device_id}   -> devices/{device_id}/state
-medibox_commands/{device_id} -> devices/{device_id}/command
-```
-
-Không nên đổi cấu trúc giữa chừng khi firmware mới chưa sẵn sàng. Có thể giữ adapter đọc/ghi cũ trong giai đoạn chuyển tiếp.
+`devices` là cấu trúc duy nhất được web và firmware sử dụng. Web không đọc,
+ghi hoặc ánh xạ dữ liệu từ các nhánh cũ.
 
 ## 3. Định danh thiết bị
 
@@ -235,20 +228,12 @@ Không xóa ngay toàn bộ node mà ESP đang đọc. Quy trình chuẩn:
 
 Nếu ESP đang offline lúc xóa, khi nó online lại phải đọc `meta.lifecycle` trước khi ghi state. Nếu thấy `deleted`, nó không được tự tạo lại thiết bị cũ.
 
-## 10. Tương thích v1 với dữ liệu hiện tại
+## 10. Phạm vi dữ liệu hiện tại
 
-Trong giai đoạn chuyển tiếp:
-
-- `medibox_configs/{device_id}` đọc như `devices/{device_id}/config`.
-- `medibox_states/{device_id}` đọc như `devices/{device_id}/state`.
-- `medibox_commands/{device_id}` đọc như `devices/{device_id}/command`.
-- `locked: true/false` chuyển thành `lock: locked/unlocked`.
-- `online: true/false` chuyển thành `connection: online/offline`.
-- `medicine_taken`, `pill_taken`, `taken` chuyển về `medicine.last_action`.
-- `battery_percent` chuyển thành `battery.percent`.
-- `last_seen` giữ nguyên Unix seconds.
-
-Khi firmware mới và API mới cùng chạy ổn định, dừng ghi schema cũ rồi mới xóa adapter.
+Web chỉ đọc và ghi schema v1 dưới `users/{uid}/devices/{device_id}`. Dữ liệu
+trạng thái phải dùng các field chuẩn như `connection`, `lock`,
+`medicine.last_action` và `battery.percent`; không chuyển đổi ngầm từ field
+hoặc nhánh dữ liệu cũ.
 
 ## 11. Validation tối thiểu
 
