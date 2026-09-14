@@ -24,18 +24,10 @@ $statesData = json_decode($statesResponse ?: '{}', true);
 $statesData = is_array($statesData) ? $statesData : [];
 $newDeviceStates = [];
 foreach ($statesData as $deviceId => $deviceNode) {
-    if (is_array($deviceNode) && isset($deviceNode['state'])) {
+    if (preg_match('/^device_[A-F0-9]{12}$/', (string) $deviceId) === 1
+        && is_array($deviceNode) && isset($deviceNode['state'])) {
         $newDeviceStates[$deviceId] = $deviceNode['state'];
     }
-}
-if (!$newDeviceStates) {
-    $legacyStatesUrl = $dbUrl . "users/" . rawurlencode($localId) . "/medibox_states.json?auth=" . urlencode($idToken);
-    $legacyStatesCh = curl_init($legacyStatesUrl);
-    curl_setopt($legacyStatesCh, CURLOPT_RETURNTRANSFER, true);
-    $legacyStatesResponse = curl_exec($legacyStatesCh);
-    curl_close($legacyStatesCh);
-    $newDeviceStates = json_decode($legacyStatesResponse ?: '{}', true);
-    $newDeviceStates = is_array($newDeviceStates) ? $newDeviceStates : [];
 }
 $initialDeviceId = count($newDeviceStates) ? (string) array_key_first($newDeviceStates) : '';
 
@@ -52,12 +44,7 @@ $configData = json_decode($response ?: 'null', true);
 if (is_array($configData) && isset($configData['slots'])) {
     $initialMedications = json_encode($configData['slots'], JSON_UNESCAPED_UNICODE);
 } else {
-    $legacyTargetUrl = $dbUrl . "users/" . rawurlencode($localId) . "/medibox_configs/" . rawurlencode($initialDeviceId) . ".json?auth=" . urlencode($idToken);
-    $legacyCh = curl_init($legacyTargetUrl);
-    curl_setopt($legacyCh, CURLOPT_RETURNTRANSFER, true);
-    $legacyResponse = curl_exec($legacyCh);
-    curl_close($legacyCh);
-    $initialMedications = ($legacyResponse && $legacyResponse !== 'null') ? $legacyResponse : "null";
+    $initialMedications = '[]';
 }
 
 // Nạp sẵn danh sách thiết bị để giao diện không phải chờ request AJAX đầu tiên.
@@ -204,7 +191,7 @@ $initialDevices = json_encode($newDeviceStates, JSON_UNESCAPED_UNICODE);
     </div>
 
     <!-- Custom JS -->
-    <script src="script_3.js"></script>
+    <script src="script_3.js?v=20260914-4slots"></script>
 </body>
 
 </html>

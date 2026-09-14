@@ -63,11 +63,9 @@ if ($action === 'save_medications') {
 else if ($action === 'read_medications') {
     $config = firebaseGet($deviceRoot . '/config', $idToken);
     if (is_array($config) && isset($config['slots'])) {
-        $medications = $config['slots'];
+        $medications = normalizeMedicationSlots($config['slots']);
     } else {
-        // Adapter đọc dữ liệu cũ trong giai đoạn chuyển tiếp.
-        $medications = firebaseGet($userRoot . '/' . FIREBASE_CONFIG_ROOT . '/' . rawurlencode($deviceId), $idToken);
-        $medications = is_array($medications) ? $medications : [];
+        $medications = normalizeMedicationSlots([]);
     }
     respond(["status" => "success", "medications" => $medications]);
     exit();
@@ -92,24 +90,18 @@ else if ($action === 'control_lock') {
     exit();
 }
 else if ($action === 'read_device_state') {
-    $state = getDeviceState($deviceRoot, $userRoot, $deviceId, $idToken);
+    $state = getDeviceState($deviceRoot, $idToken);
 
     respond(["status" => "success", "device_status" => $state]);
     exit();
 }
 else if ($action === 'list_devices') {
     $deviceNodes = firebaseGet($userRoot . '/' . FIREBASE_DEVICE_ROOT, $idToken) ?? [];
-    if (!is_array($deviceNodes) || !$deviceNodes) {
-        $legacyStates = firebaseGet($userRoot . '/' . FIREBASE_STATE_ROOT, $idToken) ?? [];
-        $deviceNodes = [];
-        foreach ($legacyStates as $id => $state) {
-            $deviceNodes[$id] = ['state' => $state];
-        }
-    }
+    $deviceNodes = is_array($deviceNodes) ? $deviceNodes : [];
     $devices = [];
     foreach ($deviceNodes as $id => $node) {
         if (!isSupportedDeviceId((string) $id)) continue;
-        $state = getDeviceState($userRoot . '/' . FIREBASE_DEVICE_ROOT . '/' . rawurlencode($id), $userRoot, $id, $idToken);
+        $state = getDeviceState($userRoot . '/' . FIREBASE_DEVICE_ROOT . '/' . rawurlencode($id), $idToken);
         $meta = is_array($node['meta'] ?? null) ? $node['meta'] : [];
         $state['device_id'] = $id;
         $state['display_name'] = $meta['display_name'] ?? '';
@@ -146,17 +138,19 @@ function firebaseGet($path, $idToken) {
 }
 
 function isSupportedDeviceId($deviceId) {
-    // 6 ký tự chỉ dành cho adapter dữ liệu cũ; thiết bị mới phải dùng đủ 12 ký tự MAC.
-    return preg_match('/^device_[A-F0-9]{12}$/', $deviceId) === 1
-        || preg_match('/^device_[A-F0-9]{6}$/', $deviceId) === 1;
+    return preg_match('/^device_[A-F0-9]{12}$/', $deviceId) === 1;
 }
 
 function normalizeMedicationSlots($medications) {
+    if (!is_array($medications) || count($medications) > MEDIBOX_SLOT_COUNT) {
+        respondError('Cấu hình phải có tối đa ' . MEDIBOX_SLOT_COUNT . ' ngăn thuốc', 400);
+    }
+
     $slots = [];
     foreach ($medications as $medication) {
         if (!is_array($medication)) continue;
         $slotId = filter_var($medication['slot'] ?? $medication['slot_id'] ?? null, FILTER_VALIDATE_INT);
-        if ($slotId === false || $slotId < 1) {
+        if ($slotId === false || $slotId < 1 || $slotId > MEDIBOX_SLOT_COUNT || isset($slots[$slotId])) {
             respondError('Ngăn thuốc không hợp lệ', 400);
         }
         $doses = [];
@@ -174,26 +168,33 @@ function normalizeMedicationSlots($medications) {
                 'quantity' => $quantity
             ];
         }
-        $slots[] = [
+        $slots[$slotId] = [
             'slot_id' => $slotId,
-            'enabled' => ($medication['enabled'] ?? ($medication['name'] ?? '') !== 'Chưa thiết lập'),
+            'enabled' => (bool) ($medication['enabled'] ?? (($medication['name'] ?? $medication['medicine_name'] ?? '') !== 'Chưa thiết lập')),
             'medicine_name' => (string) ($medication['name'] ?? $medication['medicine_name'] ?? ''),
             'note' => (string) ($medication['detail'] ?? $medication['note'] ?? ''),
             'doses' => $doses
         ];
     }
-    return $slots;
+
+    $normalizedSlots = [];
+    for ($slotId = 1; $slotId <= MEDIBOX_SLOT_COUNT; $slotId++) {
+        $normalizedSlots[] = $slots[$slotId] ?? [
+            'slot_id' => $slotId,
+            'enabled' => false,
+            'medicine_name' => '',
+            'note' => '',
+            'doses' => []
+        ];
+    }
+    return $normalizedSlots;
 }
 
-function getDeviceState($deviceRoot, $userRoot, $deviceId, $idToken) {
+function getDeviceState($deviceRoot, $idToken) {
     $state = firebaseGet($deviceRoot . '/state', $idToken);
-    if (!is_array($state)) {
-        $state = firebaseGet($userRoot . '/' . FIREBASE_STATE_ROOT . '/' . rawurlencode($deviceId), $idToken) ?? [];
-    }
+    $state = is_array($state) ? $state : [];
     $command = firebaseGet($deviceRoot . '/command', $idToken);
-    if (!is_array($command)) {
-        $command = firebaseGet($userRoot . '/' . FIREBASE_COMMAND_ROOT . '/' . rawurlencode($deviceId), $idToken) ?? [];
-    }
+    $command = is_array($command) ? $command : [];
     $state = normalizeDeviceState($state, $command);
     $state['online'] = resolveOnlineState($state);
     $state['locked'] = ($state['lock'] ?? 'unknown') === 'locked';
@@ -201,25 +202,8 @@ function getDeviceState($deviceRoot, $userRoot, $deviceId, $idToken) {
 }
 
 function normalizeDeviceState($state, $command) {
-    if (isset($state['online']) && !isset($state['connection'])) {
-        $state['connection'] = $state['online'] ? 'online' : 'offline';
-    }
-    if (isset($state['locked']) && !isset($state['lock'])) {
-        $state['lock'] = $state['locked'] ? 'locked' : 'unlocked';
-    }
     if (!isset($state['lock']) && isset($command['requested_lock'])) {
         $state['lock'] = $command['requested_lock'];
-    } elseif (!isset($state['lock']) && isset($command['locked'])) {
-        $state['lock'] = $command['locked'] ? 'locked' : 'unlocked';
-    }
-    if (!isset($state['last_seen']) && isset($state['reported_at'])) {
-        $state['last_seen'] = $state['reported_at'];
-    }
-    if (isset($state['battery_percent']) && !isset($state['battery'])) {
-        $state['battery'] = ['percent' => $state['battery_percent']];
-    }
-    if (!isset($state['medicine']) && isset($state['medicine_taken'])) {
-        $state['medicine'] = ['last_action' => $state['medicine_taken'] ? 'taken' : 'none'];
     }
     return $state;
 }
