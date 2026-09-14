@@ -228,24 +228,20 @@ Web không xóa ngay các node mà ESP cần đọc. Quy trình là:
 Nếu ESP offline lúc xóa, khi kết nối lại phải đọc `meta.lifecycle` trước khi ghi
 state. Thiết bị đã bị xóa không được tự tạo lại trong tài khoản cũ.
 
-### G. Tương thích dữ liệu cũ
+### G. Schema đang sử dụng
 
-Trong giai đoạn chuyển tiếp, backend vẫn có thể đọc các nhánh cũ:
-
-```text
-users/{localId}/medibox_configs/{device_id}
-users/{localId}/medibox_states/{device_id}
-users/{localId}/medibox_commands/{device_id}
-```
-
-Mapping sang schema mới:
+Backend và firmware chỉ sử dụng cây mới:
 
 ```text
-medibox_configs/{device_id}  -> devices/{device_id}/config
-medibox_states/{device_id}   -> devices/{device_id}/state
-medibox_commands/{device_id} -> devices/{device_id}/command
+users/{localId}/devices/{device_id}/
+├── meta
+├── config
+├── state
+├── command
+└── events/{event_id}
 ```
 
-Firmware mới chỉ nên dùng cây `users/{localId}/devices/{device_id}`. Sau khi
-firmware và backend mới chạy ổn định, dừng ghi nhánh cũ rồi mới xóa adapter.
+Mỗi `device_id` có đúng 4 ngăn độc lập (`slot_id` từ 1 đến 4). Cấu hình,
+trạng thái và command luôn được đọc trong đúng nhánh của thiết bị đã chọn;
+không đọc hoặc ánh xạ dữ liệu từ các nhánh cũ.
 
