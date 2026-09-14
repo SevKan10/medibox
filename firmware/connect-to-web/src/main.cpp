@@ -3,6 +3,8 @@
 #include <WebServer.h>
 #include <Preferences.h>
 #include <time.h>
+#include <esp_mac.h>
+#include <esp_system.h>
 
 #define batPin 34
 #define LED 2
@@ -26,6 +28,22 @@ String macAddress;
 String deviceBasePath;
 String statePath;
 bool setupMode = false;
+
+const char* resetReasonName(esp_reset_reason_t reason) {
+  switch (reason) {
+    case ESP_RST_POWERON: return "POWERON";
+    case ESP_RST_EXT: return "EXTERNAL";
+    case ESP_RST_SW: return "SOFTWARE";
+    case ESP_RST_PANIC: return "PANIC";
+    case ESP_RST_INT_WDT: return "INT_WDT";
+    case ESP_RST_TASK_WDT: return "TASK_WDT";
+    case ESP_RST_WDT: return "WDT";
+    case ESP_RST_DEEPSLEEP: return "DEEPSLEEP";
+    case ESP_RST_BROWNOUT: return "BROWNOUT";
+    case ESP_RST_SDIO: return "SDIO";
+    default: return "UNKNOWN";
+  }
+}
 
 int readBatteryPercent() {
   long sum = 0;
@@ -132,8 +150,18 @@ void sendSetupResult(const String& title, const String& message) {
   page += htmlEscape(message);
   page += "</p><p>ESP32 sẽ khởi động lại sau 5 giây.</p></body></html>";
   setupServer.send(200, "text/html; charset=utf-8", page);
-  delay(5000);
+  delay(1500);
   ESP.restart();
+}
+
+bool connectToRequestedWiFi(const String& requestedSsid, const String& requestedPassword) {
+  WiFi.begin(requestedSsid.c_str(), requestedPassword.c_str());
+
+  unsigned long startedAt = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - startedAt < 20000) {
+    delay(250);
+  }
+  return WiFi.status() == WL_CONNECTED;
 }
 
 void handleSaveSetup() {
@@ -146,18 +174,17 @@ void handleSaveSetup() {
   String requestedPassword = setupServer.arg("password");
   String requestedUid = setupServer.arg("uid");
 
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.begin(requestedSsid.c_str(), requestedPassword.c_str());
-  unsigned long startedAt = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - startedAt < 20000) {
-    delay(500);
-  }
-
-  if (WiFi.status() != WL_CONNECTED) {
+  if (!connectToRequestedWiFi(requestedSsid, requestedPassword)) {
+    Serial.println("Không kết nối được Wi-Fi đã nhập.");
     setupServer.send(503, "text/html; charset=utf-8",
-                     "<h2>Không kết nối được Wi-Fi</h2><p>Kiểm tra lại tên và mật khẩu Wi-Fi rồi thử lại.</p>");
+                     "<h2>Không kết nối được Wi-Fi</h2>"
+                     "<p>Kiểm tra SSID và mật khẩu rồi thử lại.</p>"
+                     "<p>Thiết bị vẫn đang phát mạng MEDIBOX.</p>");
     return;
   }
+
+  userUid = requestedUid;
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
 
   initializeFirebase();
   unsigned long firebaseStartedAt = millis();
@@ -167,7 +194,8 @@ void handleSaveSetup() {
 
   if (!Firebase.ready()) {
     setupServer.send(503, "text/html; charset=utf-8",
-                     "<h2>Không kết nối được Firebase</h2><p>Thiết bị chưa được đăng ký.</p>");
+                     "<h2>Không kết nối được Firebase</h2>"
+                     "<p>Kiểm tra mạng Internet và Firebase rồi thử lại.</p>");
     return;
   }
 
@@ -179,7 +207,8 @@ void handleSaveSetup() {
   requestedMetaPath += "/meta";
   if (!Firebase.RTDB.setJSON(&fbdo, requestedMetaPath.c_str(), &metaJson)) {
     setupServer.send(503, "text/html; charset=utf-8",
-                     "<h2>Đăng ký thất bại</h2><p>Không thể lưu meta lên Firebase.</p>");
+                     "<h2>Đăng ký thất bại</h2>"
+                     "<p>Không thể lưu meta lên Firebase. Kiểm tra quyền database.</p>");
     return;
   }
 
@@ -189,7 +218,8 @@ void handleSaveSetup() {
   requestedStatePath += "/state";
   if (!Firebase.RTDB.setJSON(&fbdo, requestedStatePath.c_str(), &stateJson)) {
     setupServer.send(503, "text/html; charset=utf-8",
-                     "<h2>Đăng ký thất bại</h2><p>Không thể lưu dữ liệu lên Firebase.</p>");
+                     "<h2>Đăng ký thất bại</h2>"
+                     "<p>Không thể lưu state lên Firebase. Vui lòng thử lại.</p>");
     return;
   }
 
@@ -199,30 +229,73 @@ void handleSaveSetup() {
   preferences.putString("uid", requestedUid);
   preferences.end();
 
-  sendSetupResult("Đăng ký thành công", "Thiết bị đã được liên kết với tài khoản này.");
+  Serial.println("Đăng ký thành công, thiết bị sẽ khởi động lại.");
+  delay(1000);
+  ESP.restart();
 }
 
 void startSetupMode() {
-  setupMode = true;
-  String apName = "MEDIBOX-";
-  apName += macAddress.substring(macAddress.length() - 5);
-  String apPassword = "setup";
-  apPassword += macAddress.substring(macAddress.length() - 6);
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(apName.c_str(), apPassword.c_str());
+    setupMode = true;
 
-  setupServer.on("/", HTTP_GET, handleSetupPage);
-  setupServer.on("/save", HTTP_POST, handleSaveSetup);
-  setupServer.onNotFound([]() { setupServer.sendHeader("Location", "/"); setupServer.send(302); });
-  setupServer.begin();
+    String apName = "MEDIBOX-";
+    apName += macAddress.substring(macAddress.length() - 5);
 
-  Serial.println("=== SETUP MODE ===");
-  Serial.print("Connect to Wi-Fi: ");
-  Serial.println(apName);
-  Serial.print("Setup password: ");
-  Serial.println(apPassword);
-  Serial.print("Open: http://");
-  Serial.println(WiFi.softAPIP());
+    String apPassword = "setup";
+    apPassword += macAddress.substring(macAddress.length() - 6);
+
+    // Reset Wi-Fi state before starting the setup AP.
+    WiFi.disconnect(true);
+    delay(500);
+    WiFi.mode(WIFI_AP);
+    delay(500);
+    WiFi.setSleep(false);
+
+    // IP của ESP32
+    IPAddress local_ip(192, 168, 4, 1);
+    IPAddress gateway(192, 168, 4, 1);
+    IPAddress subnet(255, 255, 255, 0);
+
+    WiFi.softAPConfig(local_ip, gateway, subnet);
+
+    // Kênh 1, không ẩn SSID, tối đa 4 thiết bị
+    bool apStarted = WiFi.softAP(
+        apName.c_str(),
+        apPassword.c_str(),
+        1,
+        false,
+        4
+    );
+
+    Serial.println("=== SETUP MODE ===");
+
+    if (!apStarted) {
+        Serial.println("ERROR: Không thể khởi động AP!");
+        return;
+    }
+
+    Serial.print("AP: ");
+    Serial.println(apName);
+
+    Serial.print("Password: ");
+    Serial.println(apPassword);
+
+    Serial.print("IP: ");
+    Serial.println(WiFi.softAPIP());
+
+    Serial.print("AP MAC: ");
+    Serial.println(WiFi.softAPmacAddress());
+
+    setupServer.on("/", HTTP_GET, handleSetupPage);
+    setupServer.on("/save", HTTP_POST, handleSaveSetup);
+
+    setupServer.onNotFound([]() {
+        setupServer.sendHeader("Location", "/");
+        setupServer.send(302);
+    });
+
+    setupServer.begin();
+
+    Serial.println("Web server started.");
 }
 
 bool loadAndConnectWiFi() {
@@ -249,10 +322,17 @@ bool loadAndConnectWiFi() {
 void setup() {
   Serial.begin(115200);
   delay(1000);
+  Serial.print("Reset reason: ");
+  Serial.println(resetReasonName(esp_reset_reason()));
   pinMode(batPin, INPUT);
   pinMode(LED, OUTPUT);
 
-  macAddress = WiFi.macAddress();
+  uint8_t macBytes[6];
+  esp_read_mac(macBytes, ESP_MAC_WIFI_STA);
+  char macText[18];
+  snprintf(macText, sizeof(macText), "%02X:%02X:%02X:%02X:%02X:%02X",
+           macBytes[0], macBytes[1], macBytes[2], macBytes[3], macBytes[4], macBytes[5]);
+  macAddress = macText;
   deviceId = deviceIdFromMac();
   Serial.print("MAC: ");
   Serial.println(macAddress);
